@@ -1,5 +1,5 @@
 {
-    "name": "locald",
+    "name": "nics-node-httpd",
     "version": "0.0.1",
     "description": "A better standalone webserver",
     "main": "server.js",
