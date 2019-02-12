@@ -12,8 +12,10 @@
     },
     "bin": {
         "httpd": "./server.js"
-    }
-    "keywords": ["webserver"],
+    },
+    "keywords": [
+        "webserver"
+    ],
     "author": "nic ferrier, nic@ferrier.me.uk",
     "license": "MIT",
     "dependencies": {
