@@ -1,0 +1,11 @@
+body {
+    font-family: sans-serif;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+body.markdown {
+    margin: 0 auto;
+    width: 60%;
+}
