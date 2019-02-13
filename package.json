@@ -23,5 +23,8 @@
     },
     "engines": {
         "node": ">=10.0"
+    },
+    "devDependencies": {
+        "html-dom-parser": "^0.1.3"
     }
 }
