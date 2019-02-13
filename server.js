@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const http = require("http");
 const fs = require("fs");
 const process = require("process");
@@ -94,10 +95,40 @@ exports.boot = async function (port) {
     return listener;
 }
 
+
+
+
 if (require.main === module) {
-    exports.boot(8082).then(listener => {
-        console.log("listening on", listener.address().port);
-    });
+    try {
+        const args = process.argv.slice(2);
+        if (args[0] == "help") {
+            console.log(`nic's node httpd - a local webserver for local people
+
+Start nic's httpd with port 8091 in the current directory:
+
+   httpd 8091
+
+If you don't specify a port, one will get allocated.
+
+When nic's httpd starts it states what port it will be serving.`);
+        }
+        else {
+            try {
+                const firstArg = args.length > 0 ? args[0] : "0";
+                const port = parseInt(firstArg);
+                exports.boot(port)
+                    .then(listener => {
+                        console.log("listening on", listener.address().port);
+                    });;
+            }
+            catch (e) {
+                console.log(`${args[0]} is not an integer so won't start an httpd`);
+            }
+        }
+    }
+    catch (e) {
+        console.log("args is empty?", e);
+    }
 }
 
 // End
