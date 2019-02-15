@@ -6,7 +6,8 @@ tricks up it's sleeves.
 It will show index pages of bare directories.
 
 Inside an index, if you focus on a link to a file that is an image,
-then the background will be changed to the image.
+then the image will be displayed on the right. The same works for
+video files.
 
 If you click on a markdown file, it will be turned into HTML and
 somewhat styled.
