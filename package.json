@@ -1,6 +1,6 @@
 {
     "name": "nics-node-httpd",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "description": "A better standalone webserver",
     "main": "server.js",
     "repository": {

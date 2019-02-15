@@ -19,13 +19,15 @@ exports.boot = async function (port) {
             response.setHeader("content-type", "text/css");
             const cssFile = path.join(__dirname, "style.css");
             return fs.createReadStream(cssFile).pipe(response);
+
         }
 
-        const pathInfo = request.url;
+        const pathInfo = decodeURIComponent(request.url);
 
         const requestPath = pathInfo == "/" ? "" : pathInfo.substring(1);
         const cwd = process.cwd();
         const discPath = path.resolve(cwd, requestPath);
+
         const [accessError, haveAccess]
               = await fs.promises.access(discPath, fs.constants.R_OK)
               .then(r => [undefined, true])
@@ -51,7 +53,7 @@ exports.boot = async function (port) {
                 return {
                     file: file,
                     base: path.basename(file),
-                    link: path.join(pathInfo, path.basename(file))
+                    link: path.join(pathInfo, encodeURIComponent(path.basename(file)))
                 }
             });
             linkLinks.forEach(link => response.write(`<li><a href='${link.link}'>${link.base}</li>`));
@@ -68,14 +70,24 @@ exports.boot = async function (port) {
             ".htm": ["text", "html"],
             ".md": ["text", "html"],
             ".mp4": ["video", "mp4"],
+            ".mpg": ["video", "mpeg"],
             ".webm": ["video", "webm"]
         };
         const mimeType = mimeTypeMap[extension];
+
+        if (mimeType == undefined) {
+            response.statusCode = 400;
+            return response.end()
+        }
+
         const mt = mimeType.join("/");
         const [mimeTypePrimary, mimeTypeSub] = mimeType;
 
         if (mimeTypePrimary == "image" || mimeTypePrimary == "video") {
             response.setHeader("content-type", mt);
+            if (request.method == "HEAD") {
+                return response.end();
+            }
             return fs.createReadStream(discPath).pipe(response);
         }
         
@@ -99,8 +111,6 @@ exports.boot = async function (port) {
     });
     return listener;
 }
-
-
 
 
 if (require.main === module) {
