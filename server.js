@@ -45,7 +45,8 @@ exports.boot = async function (port) {
             response.write("<link rel='shortcut icon' href='data:image/x-icon;,' type='image/x-icon'>");
             response.write("<link rel='stylesheet' href='?style' type='text/css'>");
             response.write("<script src='?script'></script>");
-            response.write(`</head><body><h1>${pathInfo}</h1><div class='view'></div><ul class='files'>`);
+            response.write("</head><body><div tabindex='-1' class='view'><video></video><img></img></div>");
+            response.write(`<h1 tabindex="-1">${pathInfo}</h1><ul class='files'>`);
             const linkLinks = files.map(file => {
                 return {
                     file: file,
@@ -65,15 +66,19 @@ exports.boot = async function (port) {
             ".txt": ["text", "plain"],
             ".html": ["text", "html"],
             ".htm": ["text", "html"],
-            ".md": ["text", "html"]
+            ".md": ["text", "html"],
+            ".mp4": ["video", "mp4"],
+            ".webm": ["video", "webm"]
         };
         const mimeType = mimeTypeMap[extension];
+        const mt = mimeType.join("/");
         const [mimeTypePrimary, mimeTypeSub] = mimeType;
-        if (mimeTypePrimary == "image") {
-            const mt = mimeTypePrimary + "/" + mimeTypeSub;
+
+        if (mimeTypePrimary == "image" || mimeTypePrimary == "video") {
             response.setHeader("content-type", mt);
             return fs.createReadStream(discPath).pipe(response);
         }
+        
         if (extension == ".md") {
             const raw = await fs.promises.readFile(discPath);
             const src = new String(raw);

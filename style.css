@@ -1,8 +1,27 @@
 body {
     font-family: sans-serif;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
+}
+
+.display {
+    display: block !important;
+}
+
+div.view {
+    height: 100%;
+    width: 50%;
+    float: right;
+}
+
+div.view img {
+    overflow-x: scroll;
+    max-width: 100%;
+    display: none;
+}
+
+div.view video {
+    overflow: hidden;
+    max-width: 100%;
+    display: none;
 }
 
 body.markdown {
