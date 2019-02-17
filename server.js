@@ -84,11 +84,33 @@ exports.boot = async function (port) {
         const [mimeTypePrimary, mimeTypeSub] = mimeType;
 
         if (mimeTypePrimary == "image" || mimeTypePrimary == "video") {
+            const statObj = await fs.promises.lstat(discPath);
+            const fileSize = statObj.size;
+
+            const rangeFn = async function (rangeString) {
+                const [all, startPos, endPos] = new RegExp("bytes=([0-9]+)-([0-9]+)*").exec(rangeString);
+                const start = await Promise.resolve(Number(startPos)).catch(e => 0);
+                const ending = await Promise.resolve(Number(endPos)).catch(e => fileSize);
+                const end = isNaN(ending) ? fileSize : ending;
+                console.log("start", start, "end", end);
+                return [start, end];
+            };
+
+            const range = request.headers["range"];
+            const values = range === undefined ? [0, fileSize] : await rangeFn(range);
+            const [start, end] = values;
+
+            response.setHeader("accept-ranges", "bytes");
             response.setHeader("content-type", mt);
             if (request.method == "HEAD") {
                 return response.end();
             }
-            return fs.createReadStream(discPath).pipe(response);
+
+            if (start > 0) {
+                response.statusCode = 206;
+                response.setHeader("content-range", `bytes ${start}-${end}`);
+            }
+            return fs.createReadStream(discPath, {start: start, end: end}).pipe(response);
         }
         
         if (extension == ".md") {
