@@ -24,9 +24,13 @@ exports.boot = async function (port) {
     };
 
     const localdServer = http.createServer(async (request, response) => {
+        const startedTime = new Date();
         const webLog = function () {
-            const logArgs = [new Date(), request.method, request.url];
-            console.log.apply(undefined, logArgs.concat(Array.from(arguments)));
+            const now = new Date();
+            const logArgs = [now, request.method, request.url]
+                  .concat(Array.from(arguments))
+                  .concat([(now - startedTime) + "ms"]);
+            console.log.apply(undefined, logArgs);
         };
 
         if (request.url.endsWith("?script") || request.url.endsWith("?style")) {
