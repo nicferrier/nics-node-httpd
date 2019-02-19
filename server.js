@@ -8,18 +8,39 @@ const marked = require("marked");
 const tools = require("./tools.js");
 
 exports.boot = async function (port) {
+    const mimeTypeMap = {
+        ".jpg": ["image", "jpeg"],
+        ".png": ["image", "png"],
+        ".gif": ["image", "gif"],
+        ".txt": ["text", "plain"],
+        ".html": ["text", "html"],
+        ".htm": ["text", "html"],
+        ".css": ["text", "css"],
+        ".md": ["text", "html"],
+        ".js": ["application", "javascript"],
+        ".mp4": ["video", "mp4"],
+        ".mpg": ["video", "mpeg"],
+        ".webm": ["video", "webm"]
+    };
+
     const localdServer = http.createServer(async (request, response) => {
+        const webLog = function () {
+            const logArgs = [new Date(), request.method, request.url];
+            console.log.apply(undefined, logArgs.concat(Array.from(arguments)));
+        };
+
         if (request.url.endsWith("?script") || request.url.endsWith("?style")) {
             response.statusCode = 200;
             if (request.url.endsWith("?script")) {
                 response.setHeader("content-type", "application/javascript");
                 const scriptFile = path.join(__dirname, "script.js");
+                webLog("application/javascript", 200);
                 return fs.createReadStream(scriptFile).pipe(response);
             }
             response.setHeader("content-type", "text/css");
             const cssFile = path.join(__dirname, "style.css");
+            webLog("text/css", 200);
             return fs.createReadStream(cssFile).pipe(response);
-
         }
 
         const pathInfo = decodeURIComponent(request.url);
@@ -61,57 +82,9 @@ exports.boot = async function (port) {
         }
 
         const extension = path.extname(discPath);
-        const mimeTypeMap = {
-            ".jpg": ["image", "jpeg"],
-            ".png": ["image", "png"],
-            ".gif": ["image", "gif"],
-            ".txt": ["text", "plain"],
-            ".html": ["text", "html"],
-            ".htm": ["text", "html"],
-            ".md": ["text", "html"],
-            ".mp4": ["video", "mp4"],
-            ".mpg": ["video", "mpeg"],
-            ".webm": ["video", "webm"]
-        };
-        const mimeType = mimeTypeMap[extension];
-
-        if (mimeType == undefined) {
-            response.statusCode = 400;
-            return response.end()
-        }
-
-        const mt = mimeType.join("/");
+        const mimeType = mimeTypeMap[extension] === undefined ? ["application", "octet-stream"] : mimeTypeMap[extension];
         const [mimeTypePrimary, mimeTypeSub] = mimeType;
-
-        if (mimeTypePrimary == "image" || mimeTypePrimary == "video") {
-            const statObj = await fs.promises.lstat(discPath);
-            const fileSize = statObj.size;
-
-            const rangeFn = async function (rangeString) {
-                const [all, startPos, endPos] = new RegExp("bytes=([0-9]+)-([0-9]+)*").exec(rangeString);
-                const start = await Promise.resolve(Number(startPos)).catch(e => 0);
-                const ending = await Promise.resolve(Number(endPos)).catch(e => fileSize);
-                const end = isNaN(ending) ? fileSize : ending;
-                console.log("start", start, "end", end);
-                return [start, end];
-            };
-
-            const range = request.headers["range"];
-            const values = range === undefined ? [0, fileSize] : await rangeFn(range);
-            const [start, end] = values;
-
-            response.setHeader("accept-ranges", "bytes");
-            response.setHeader("content-type", mt);
-            if (request.method == "HEAD") {
-                return response.end();
-            }
-
-            if (start > 0) {
-                response.statusCode = 206;
-                response.setHeader("content-range", `bytes ${start}-${end}`);
-            }
-            return fs.createReadStream(discPath, {start: start, end: end}).pipe(response);
-        }
+        const mt = mimeType.join("/");
         
         if (extension == ".md") {
             const raw = await fs.promises.readFile(discPath);
@@ -120,11 +93,40 @@ exports.boot = async function (port) {
             response.write("<html><head>");
             response.write("<link rel='stylesheet' type='text/css' href='?style'/>");
             response.write("</head><body class='markdown'>");
+            webLog(mt, 200);
             return response.end(md);
         }
 
-        response.statusCode = 204;
-        response.end();
+        // Default behaviour is just to send it
+        const statObj = await fs.promises.lstat(discPath);
+        const fileSize = statObj.size;
+
+        const rangeFn = async function (rangeString) {
+            const [all, startPos, endPos] = new RegExp("bytes=([0-9]+)-([0-9]+)*").exec(rangeString);
+            const start = await Promise.resolve(Number(startPos)).catch(e => 0);
+            const ending = await Promise.resolve(Number(endPos)).catch(e => fileSize);
+            const end = isNaN(ending) ? fileSize : ending;
+            return [start, end];
+        };
+        
+        const range = request.headers["range"];
+        const values = range === undefined ? [0, fileSize] : await rangeFn(range);
+        const [start, end] = values;
+
+        response.setHeader("accept-ranges", "bytes");
+        response.setHeader("content-type", mt);
+        response.setHeader("content-length", end - start);
+        if (request.method == "HEAD") {
+            webLog(mt, 200);
+            return response.end();
+        }
+        
+        if (start > 0) {
+            response.statusCode = 206;
+            response.setHeader("content-range", `bytes ${start}-${end}`);
+        }
+        webLog(mt, 200);
+        return fs.createReadStream(discPath, {start: start, end: end}).pipe(response);
     });
     const listener = await new Promise((resolve, reject) => {
         const listener = localdServer.listen(port, function () {
