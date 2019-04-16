@@ -33,7 +33,9 @@ exports.boot = async function (port) {
             console.log.apply(undefined, logArgs);
         };
 
-        if (request.url.endsWith("?script") || request.url.endsWith("?style")) {
+        if (request.url.endsWith("?script")
+            || request.url.endsWith("?markdownjs")
+            || request.url.endsWith("?style")) {
             response.statusCode = 200;
             if (request.url.endsWith("?script")) {
                 response.setHeader("content-type", "application/javascript");
@@ -41,6 +43,14 @@ exports.boot = async function (port) {
                 webLog("application/javascript", 200);
                 return fs.createReadStream(scriptFile).pipe(response);
             }
+
+            if (request.url.endsWith("?markdownjs")) {
+                response.setHeader("content-type", "application/javascript");
+                const scriptFile = path.join(__dirname, "markdown-script.js");
+                webLog("application/javascript", 200);
+                return fs.createReadStream(scriptFile).pipe(response);
+            }
+
             response.setHeader("content-type", "text/css");
             const cssFile = path.join(__dirname, "style.css");
             webLog("text/css", 200);
@@ -94,8 +104,9 @@ exports.boot = async function (port) {
             const raw = await fs.promises.readFile(discPath);
             const src = new String(raw);
             const md = marked(src.toString());
-            response.write("<html><head>");
+            response.write("<html lang='en'><head>");
             response.write("<link rel='stylesheet' type='text/css' href='?style'/>");
+            response.write("<script src='?markdownjs'></script>");
             response.write("</head><body class='markdown'>");
             webLog(mt, 200);
             return response.end(md);
