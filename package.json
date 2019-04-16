@@ -19,7 +19,7 @@
     "author": "nic ferrier, nic@ferrier.me.uk",
     "license": "MIT",
     "dependencies": {
-        "marked": "^0.6.0"
+        "marked": "^0.6.2"
     },
     "engines": {
         "node": ">=10.0"
